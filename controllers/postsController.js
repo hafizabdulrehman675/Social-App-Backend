@@ -5,22 +5,36 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
 // ─── Helper: format a single post for frontend ────────────────────────────────
-// Attaches: author info, likesCount, commentsCount, isLiked, isSaved
-// requestUserId = the logged-in user's id (to compute isLiked / isSaved)
-const formatPost = (post, requestUserId) => ({
+// includeComments = false for feed (only count), true for single post (full list)
+const formatPost = (post, requestUserId, includeComments = false) => ({
   id: post.id,
   caption: post.caption,
   imageUrl: post.imageUrl,
   location: post.location,
   createdAt: post.createdAt,
-  // author fields (joined via include)
   authorId: post.author.id,
   username: post.author.username,
   avatarUrl: post.author.avatarUrl,
-  // computed counts
   likesCount: post.likes.length,
   commentsCount: post.comments.length,
-  // did the requesting user like / save this post?
+  // feed gets last 2 comments preview, single post gets all comments
+  comments: includeComments
+    ? post.comments.map((c) => ({
+        id: c.id,
+        text: c.text,
+        parentId: c.parentId,
+        createdAt: c.createdAt,
+        username: c.author.username,
+        avatarUrl: c.author.avatarUrl,
+      }))
+    : post.comments.slice(-2).map((c) => ({
+        id: c.id,
+        text: c.text,
+        parentId: c.parentId,
+        createdAt: c.createdAt,
+        username: c.author.username,
+        avatarUrl: c.author.avatarUrl,
+      })),
   isLiked: requestUserId
     ? post.likes.some((l) => l.userId === requestUserId)
     : false,
@@ -73,10 +87,14 @@ exports.getFeed = catchAsync(async (req, res, next) => {
   const posts = await Post.findAll({
     where: { userId: followingIds },
     include: [
-      { model: User,    as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
-      { model: Like,    as: 'likes',    attributes: ['userId'] },
-      { model: SavedPost, as: 'saves',  attributes: ['userId'] },
-      { model: Comment, as: 'comments', attributes: ['id'] },
+      { model: User,      as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
+      { model: Like,      as: 'likes',    attributes: ['userId'] },
+      { model: SavedPost, as: 'saves',    attributes: ['userId'] },
+      {
+        model: Comment, as: 'comments',
+        attributes: ['id', 'text', 'parentId', 'createdAt'],
+        include: [{ model: User, as: 'author', attributes: ['username', 'avatarUrl'] }],
+      },
     ],
     order: [['createdAt', 'DESC']],
   });
@@ -84,7 +102,7 @@ exports.getFeed = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     data: {
-      posts: posts.map((p) => formatPost(p, req.user.id)),
+      posts: posts.map((p) => formatPost(p, req.user.id, false)),
     },
   });
 });
@@ -95,10 +113,14 @@ exports.getFeed = catchAsync(async (req, res, next) => {
 exports.getPost = catchAsync(async (req, res, next) => {
   const post = await Post.findByPk(req.params.postId, {
     include: [
-      { model: User,    as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
-      { model: Like,    as: 'likes',    attributes: ['userId'] },
-      { model: SavedPost, as: 'saves',  attributes: ['userId'] },
-      { model: Comment, as: 'comments', attributes: ['id'] },
+      { model: User,      as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
+      { model: Like,      as: 'likes',    attributes: ['userId'] },
+      { model: SavedPost, as: 'saves',    attributes: ['userId'] },
+      {
+        model: Comment, as: 'comments',
+        attributes: ['id', 'text', 'parentId', 'createdAt'],
+        include: [{ model: User, as: 'author', attributes: ['username', 'avatarUrl'] }],
+      },
     ],
   });
 
@@ -111,7 +133,7 @@ exports.getPost = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: 'success',
-    data: { post: formatPost(post, requestUserId) },
+    data: { post: formatPost(post, requestUserId, true) }, // true = return all comments
   });
 });
 
