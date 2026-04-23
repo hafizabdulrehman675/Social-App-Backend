@@ -17,15 +17,17 @@ app.get("/", (req, res) => {
 });
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
-const authRoutes   = require("./routes/authRoutes");
-const usersRoutes  = require("./routes/usersRoutes");
-const postsRoutes  = require("./routes/postsRoutes");
-const socialRoutes = require("./routes/socialRoutes");
+const authRoutes          = require("./routes/authRoutes");
+const usersRoutes         = require("./routes/usersRoutes");
+const postsRoutes         = require("./routes/postsRoutes");
+const socialRoutes        = require("./routes/socialRoutes");
+const notificationsRoutes = require("./routes/notificationsRoutes");
 
-app.use("/api/auth",   authRoutes);
-app.use("/api/users",  usersRoutes);
-app.use("/api/posts",  postsRoutes);
-app.use("/api/social", socialRoutes);
+app.use("/api/auth",          authRoutes);
+app.use("/api/users",         usersRoutes);
+app.use("/api/posts",         postsRoutes);
+app.use("/api/social",        socialRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 // ─── 404 Handler — unknown routes ────────────────────────────────────────────
 // If no route matched above, this runs and creates a 404 AppError
