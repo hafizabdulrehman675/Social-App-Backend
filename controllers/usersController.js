@@ -18,6 +18,23 @@ const formatUser = (user) => ({
   bio: user.bio,
 });
 
+// ─── GET ALL USERS ────────────────────────────────────────────────────────────
+// Route:   GET /api/users
+// Access:  Protected
+// Used by: "Suggested For You" sidebar — returns all users except logged-in user
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+  const users = await User.findAll({
+    where: { id: { [Op.ne]: req.user.id } },
+    attributes: ['id', 'username', 'fullName', 'avatarUrl', 'bio'],
+    order: [['createdAt', 'DESC']],
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: { users },
+  });
+});
+
 // ─── GET PROFILE ──────────────────────────────────────────────────────────────
 // Route:   GET /api/users/:username
 // Access:  Public (anyone can view a profile)
