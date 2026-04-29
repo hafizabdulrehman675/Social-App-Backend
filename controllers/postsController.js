@@ -1,158 +1,38 @@
 'use strict';
 
-const { User, Post, Like, SavedPost, Comment } = require('../models');
-const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const postsService = require('../services/postsService');
 
-// ─── Helper: format a single post for frontend ────────────────────────────────
-// includeComments = false for feed (only count), true for single post (full list)
-const formatPost = (post, requestUserId, includeComments = false) => ({
-  id: post.id,
-  caption: post.caption,
-  imageUrl: post.imageUrl,
-  location: post.location,
-  createdAt: post.createdAt,
-  authorId: post.author.id,
-  username: post.author.username,
-  avatarUrl: post.author.avatarUrl,
-  likesCount: post.likes.length,
-  commentsCount: post.comments.length,
-  // feed gets last 2 comments preview, single post gets all comments
-  comments: includeComments
-    ? post.comments.map((c) => ({
-        id: c.id,
-        text: c.text,
-        parentId: c.parentId,
-        createdAt: c.createdAt,
-        username: c.author.username,
-        avatarUrl: c.author.avatarUrl,
-      }))
-    : post.comments.slice(-2).map((c) => ({
-        id: c.id,
-        text: c.text,
-        parentId: c.parentId,
-        createdAt: c.createdAt,
-        username: c.author.username,
-        avatarUrl: c.author.avatarUrl,
-      })),
-  isLiked: requestUserId
-    ? post.likes.some((l) => l.userId === requestUserId)
-    : false,
-  isSaved: requestUserId
-    ? post.saves.some((s) => s.userId === requestUserId)
-    : false,
-});
-
-// ─── CREATE POST ──────────────────────────────────────────────────────────────
-// Route:   POST /api/posts
-// Access:  Protected
-// Body:    { imageUrl, caption?, location? }
 exports.createPost = catchAsync(async (req, res, next) => {
-  const { imageUrl, caption, location } = req.body;
-
-  if (!imageUrl) {
-    return next(new AppError('imageUrl is required', 400));
-  }
-
-  const post = await Post.create({
-    userId: req.user.id,
-    imageUrl,
-    caption: caption || null,
-    location: location || null,
-  });
+  const data = await postsService.createPost(req.user.id, req.body);
 
   res.status(201).json({
     status: 'success',
-    data: { post },
+    data,
   });
 });
 
-// ─── GET FEED ─────────────────────────────────────────────────────────────────
-// Route:   GET /api/posts/feed
-// Access:  Protected
-// Returns: posts from people the logged-in user follows, newest first
 exports.getFeed = catchAsync(async (req, res, next) => {
-  // 1) Find all userIds that req.user follows
-  const { Follower } = require('../models');
-  const following = await Follower.findAll({
-    where: { followerId: req.user.id },
-    attributes: ['followingId'],
-  });
-
-  // Extract ids + include own posts in feed
-  const followingIds = following.map((f) => f.followingId);
-  followingIds.push(req.user.id);
-
-  // 2) Fetch posts from those users with all needed data in one query
-  const posts = await Post.findAll({
-    where: { userId: followingIds },
-    include: [
-      { model: User,      as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
-      { model: Like,      as: 'likes',    attributes: ['userId'] },
-      { model: SavedPost, as: 'saves',    attributes: ['userId'] },
-      {
-        model: Comment, as: 'comments',
-        attributes: ['id', 'text', 'parentId', 'createdAt'],
-        include: [{ model: User, as: 'author', attributes: ['username', 'avatarUrl'] }],
-      },
-    ],
-    order: [['createdAt', 'DESC']],
-  });
+  const data = await postsService.getFeed(req.user.id);
 
   res.status(200).json({
     status: 'success',
-    data: {
-      posts: posts.map((p) => formatPost(p, req.user.id, false)),
-    },
+    data,
   });
 });
 
-// ─── GET SINGLE POST ──────────────────────────────────────────────────────────
-// Route:   GET /api/posts/:postId
-// Access:  Public
 exports.getPost = catchAsync(async (req, res, next) => {
-  const post = await Post.findByPk(req.params.postId, {
-    include: [
-      { model: User,      as: 'author',   attributes: ['id', 'username', 'avatarUrl'] },
-      { model: Like,      as: 'likes',    attributes: ['userId'] },
-      { model: SavedPost, as: 'saves',    attributes: ['userId'] },
-      {
-        model: Comment, as: 'comments',
-        attributes: ['id', 'text', 'parentId', 'createdAt'],
-        include: [{ model: User, as: 'author', attributes: ['username', 'avatarUrl'] }],
-      },
-    ],
-  });
-
-  if (!post) {
-    return next(new AppError('Post not found', 404));
-  }
-
-  // req.user may be undefined on public access — pass null so isLiked/isSaved = false
   const requestUserId = req.user ? req.user.id : null;
+  const data = await postsService.getPostById(req.params.postId, requestUserId);
 
   res.status(200).json({
     status: 'success',
-    data: { post: formatPost(post, requestUserId, true) }, // true = return all comments
+    data,
   });
 });
 
-// ─── DELETE POST ──────────────────────────────────────────────────────────────
-// Route:   DELETE /api/posts/:postId
-// Access:  Protected (only post owner)
 exports.deletePost = catchAsync(async (req, res, next) => {
-  const post = await Post.findByPk(req.params.postId);
-
-  if (!post) {
-    return next(new AppError('Post not found', 404));
-  }
-
-  // Only the owner can delete their post
-  if (post.userId !== req.user.id) {
-    return next(new AppError('You can only delete your own posts', 403));
-  }
-
-  await post.destroy();
+  await postsService.deletePost(req.params.postId, req.user.id);
 
   res.status(200).json({
     status: 'success',
