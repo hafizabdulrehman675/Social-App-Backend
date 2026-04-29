@@ -3,6 +3,44 @@
 const { Follower, FollowRequest, User, Notification } = require('../models');
 const AppError = require('../utils/appError');
 
+const getMySocialState = async ({ myUserId }) => {
+  const follows = await Follower.findAll({
+    attributes: ['followerId', 'followingId'],
+  });
+
+  const followingByUserId = {};
+  for (const row of follows) {
+    const followerId = String(row.followerId);
+    const followingId = String(row.followingId);
+    if (!followingByUserId[followerId]) {
+      followingByUserId[followerId] = [];
+    }
+    followingByUserId[followerId].push(followingId);
+  }
+
+  const requests = await FollowRequest.findAll({
+    where: {
+      status: 'pending',
+    },
+  });
+
+  const requestsById = {};
+  for (const req of requests) {
+    if (req.fromUserId !== myUserId && req.toUserId !== myUserId) continue;
+    requestsById[String(req.id)] = {
+      id: String(req.id),
+      fromUserId: String(req.fromUserId),
+      toUserId: String(req.toUserId),
+      status: req.status,
+    };
+  }
+
+  return {
+    followingByUserId,
+    requestsById,
+  };
+};
+
 const sendFollowRequest = async ({ fromUserId, toUserId }) => {
   if (fromUserId === toUserId) {
     throw new AppError('You cannot follow yourself', 400);
@@ -142,6 +180,7 @@ const getFollowing = async ({ username }) => {
 };
 
 module.exports = {
+  getMySocialState,
   sendFollowRequest,
   cancelOrUnfollow,
   getFollowRequests,

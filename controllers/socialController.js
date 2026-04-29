@@ -3,6 +3,15 @@
 const catchAsync = require('../utils/catchAsync');
 const socialService = require('../services/socialService');
 
+exports.getMySocialState = catchAsync(async (req, res, next) => {
+  const data = await socialService.getMySocialState({ myUserId: req.user.id });
+
+  res.status(200).json({
+    status: 'success',
+    data,
+  });
+});
+
 // ─── SEND FOLLOW REQUEST ──────────────────────────────────────────────────────
 // Route:   POST /api/social/follow/:userId
 // Access:  Protected
