@@ -1,12 +1,13 @@
-const app = require('./app');
-const sequelize = require('./config/connection');
-require('dotenv').config();
+const app = require("./app");
+const sequelize = require("./config/connection");
+require("dotenv").config();
 
 const PORT = process.env.PORT || 5000;
 
-sequelize.authenticate()
+sequelize
+  .authenticate()
   .then(() => {
-    console.log('Database connected successfully!');
+    console.log("Database connected successfully!");
     return sequelize.sync({ alter: false });
   })
   .then(() => {
@@ -15,5 +16,6 @@ sequelize.authenticate()
     });
   })
   .catch((err) => {
-    console.error('Unable to connect to database:', err);
+    console.error("Unable to connect to database:", err);
   });
+// server js
