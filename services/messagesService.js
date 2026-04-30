@@ -50,13 +50,14 @@ async function formatThread(thread, myUserId) {
   // messages in the thread (for messageIds + unread counts)
   const messages = await Message.findAll({
     where: { threadId: thread.id },
-    attributes: ['id'],
+    attributes: ['id', 'senderId'],
     order: [['createdAt', 'ASC']],
   });
   const messageIds = messages.map((m) => String(m.id));
 
   const readCursors = await MessageRead.findAll({
     where: { threadId: thread.id },
+    order: [['updatedAt', 'DESC'], ['id', 'DESC']],
   });
 
   const lastReadMessageIdByUserId = {};
@@ -67,14 +68,18 @@ async function formatThread(thread, myUserId) {
     const lastReadId = cursor?.lastReadMessageId ?? null;
     lastReadMessageIdByUserId[String(p.userId)] = lastReadId ? String(lastReadId) : null;
 
-    // Unread = messages after last read message
-    if (!lastReadId) {
-      unreadCountByUserId[String(p.userId)] = messageIds.length;
-    } else {
-      const lastReadIndex = messageIds.findIndex((id) => id === String(lastReadId));
-      unreadCountByUserId[String(p.userId)] =
-        lastReadIndex === -1 ? 0 : messageIds.length - lastReadIndex - 1;
-    }
+    const uid = String(p.userId);
+    const lastReadIndex = lastReadId
+      ? messageIds.findIndex((id) => id === String(lastReadId))
+      : -1;
+
+    // Unread should count only messages sent by OTHER participants.
+    const unreadFromOthers = messages.filter((m, idx) => {
+      const sentByCurrentUser = String(m.senderId) === uid;
+      return !sentByCurrentUser && idx > lastReadIndex;
+    }).length;
+
+    unreadCountByUserId[uid] = unreadFromOthers;
   }
 
   return {
@@ -205,11 +210,22 @@ const markThreadRead = async ({ myUserId, threadId }) => {
     order: [['createdAt', 'DESC']],
   });
 
-  await MessageRead.upsert({
-    threadId: parseInt(threadId),
-    userId: myUserId,
-    lastReadMessageId: lastMessage ? lastMessage.id : null,
+  const numericThreadId = parseInt(threadId);
+  const existingCursor = await MessageRead.findOne({
+    where: { threadId: numericThreadId, userId: myUserId },
+    order: [['updatedAt', 'DESC'], ['id', 'DESC']],
   });
+
+  if (existingCursor) {
+    existingCursor.lastReadMessageId = lastMessage ? lastMessage.id : null;
+    await existingCursor.save();
+  } else {
+    await MessageRead.create({
+      threadId: numericThreadId,
+      userId: myUserId,
+      lastReadMessageId: lastMessage ? lastMessage.id : null,
+    });
+  }
 
   return {
     threadId,

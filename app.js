@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const AppError = require("./utils/appError");
 const errorHandler = require("./middleware/errorHandler");
+const requestLogger = require("./middleware/requestLogger");
 require("dotenv").config();
 
 const app = express();
@@ -27,7 +28,7 @@ const messagesRoutes      = require("./routes/messagesRoutes");
 app.use("/api/auth",          authRoutes);
 app.use("/api/users",         usersRoutes);
 app.use("/api/posts",         postsRoutes);
-app.use("/api/social",        socialRoutes);
+app.use("/api/social",        requestLogger("social"), socialRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/messages",      messagesRoutes);
 

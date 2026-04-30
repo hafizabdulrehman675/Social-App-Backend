@@ -1,9 +1,12 @@
 'use strict';
 
+const { Op } = require('sequelize');
 const { Follower, FollowRequest, User, Notification } = require('../models');
 const AppError = require('../utils/appError');
 
 const getMySocialState = async ({ myUserId }) => {
+  const userId = Number(myUserId);
+
   const follows = await Follower.findAll({
     attributes: ['followerId', 'followingId'],
   });
@@ -21,12 +24,12 @@ const getMySocialState = async ({ myUserId }) => {
   const requests = await FollowRequest.findAll({
     where: {
       status: 'pending',
+      [Op.or]: [{ fromUserId: userId }, { toUserId: userId }],
     },
   });
 
   const requestsById = {};
   for (const req of requests) {
-    if (req.fromUserId !== myUserId && req.toUserId !== myUserId) continue;
     requestsById[String(req.id)] = {
       id: String(req.id),
       fromUserId: String(req.fromUserId),
@@ -82,6 +85,13 @@ const cancelOrUnfollow = async ({ fromUserId, toUserId }) => {
   });
 
   if (pendingRequest) {
+    await Notification.destroy({
+      where: {
+        recipientId: toUserId,
+        senderId: fromUserId,
+        type: 'follow_request',
+      },
+    });
     await pendingRequest.destroy();
     return { action: 'cancel', message: 'Follow request cancelled' };
   }
@@ -147,6 +157,14 @@ const respondToRequest = async ({ requestId, action, recipientUserId }) => {
       postId: null,
     });
   }
+
+  await Notification.destroy({
+    where: {
+      recipientId: request.toUserId,
+      senderId: request.fromUserId,
+      type: 'follow_request',
+    },
+  });
 
   await request.destroy();
 
