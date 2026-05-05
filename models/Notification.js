@@ -29,8 +29,9 @@ const Notification = sequelize.define('Notification', {
   // comment        → someone commented on your post
   // follow         → someone followed you
   // follow_request → someone requested to follow you
+  // message        → someone sent you a direct message
   type: {
-    type: DataTypes.ENUM('like', 'comment', 'follow', 'follow_request'),
+    type: DataTypes.ENUM('like', 'comment', 'follow', 'follow_request', 'message'),
     allowNull: false,
   },
 

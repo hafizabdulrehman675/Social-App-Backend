@@ -57,9 +57,21 @@ const markAllRead = async ({ recipientId }) => {
   return { message: 'All notifications marked as read' };
 };
 
+const deleteAll = async ({ recipientId }) => {
+  const deletedCount = await Notification.destroy({
+    where: { recipientId },
+  });
+
+  return {
+    message: 'All notifications deleted',
+    deletedCount,
+  };
+};
+
 module.exports = {
   getNotifications,
   markOneRead,
   markAllRead,
+  deleteAll,
 };
 

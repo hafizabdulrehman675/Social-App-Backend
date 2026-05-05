@@ -7,6 +7,7 @@ const protect = require('../middleware/protect');
 
 // read-all must come before /:id — otherwise "read-all" would be treated as an id
 router.patch('/read-all',   protect, notificationsController.markAllRead);
+router.delete('/all',       protect, notificationsController.deleteAll);
 router.patch('/:id/read',   protect, notificationsController.markOneRead);
 router.get('/',             protect, notificationsController.getNotifications);
 

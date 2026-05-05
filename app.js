@@ -8,6 +8,9 @@ require("dotenv").config();
 
 const app = express();
 
+// Disable ETag so API endpoints always return JSON bodies (avoid 304 + empty body on frontend fetches).
+app.disable("etag");
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -29,8 +32,8 @@ app.use("/api/auth",          authRoutes);
 app.use("/api/users",         usersRoutes);
 app.use("/api/posts",         postsRoutes);
 app.use("/api/social",        requestLogger("social"), socialRoutes);
-app.use("/api/notifications", notificationsRoutes);
-app.use("/api/messages",      messagesRoutes);
+app.use("/api/notifications", requestLogger("notifications"), notificationsRoutes);
+app.use("/api/messages",      requestLogger("messages"), messagesRoutes);
 
 // ─── 404 Handler — unknown routes ────────────────────────────────────────────
 // If no route matched above, this runs and creates a 404 AppError

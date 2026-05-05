@@ -45,3 +45,18 @@ exports.markAllRead = catchAsync(async (req, res, next) => {
     message: data.message,
   });
 });
+
+// ─── DELETE ALL NOTIFICATIONS ──────────────────────────────────────────────────
+// Route:   DELETE /api/notifications/all
+// Access:  Protected
+exports.deleteAll = catchAsync(async (req, res, next) => {
+  const data = await notificationsService.deleteAll({ recipientId: req.user.id });
+
+  res.status(200).json({
+    status: 'success',
+    message: data.message,
+    data: {
+      deletedCount: data.deletedCount,
+    },
+  });
+});

@@ -7,6 +7,7 @@ const {
   Message,
   MessageRead,
   User,
+  Notification,
 } = require('../models');
 const AppError = require('../utils/appError');
 
@@ -184,6 +185,26 @@ const sendMessage = async ({ myUserId, threadId, text, clientTempId }) => {
     { updatedAt: new Date() },
     { where: { id: threadId } },
   );
+
+  // Create message notifications for other participants in this thread.
+  const recipients = await ThreadParticipant.findAll({
+    where: {
+      threadId,
+      userId: { [Op.ne]: myUserId },
+    },
+    attributes: ['userId'],
+  });
+
+  if (recipients.length > 0) {
+    await Notification.bulkCreate(
+      recipients.map((r) => ({
+        recipientId: r.userId,
+        senderId: myUserId,
+        type: 'message',
+        postId: null,
+      })),
+    );
+  }
 
   return {
     message: {
