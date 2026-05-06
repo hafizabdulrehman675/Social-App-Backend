@@ -10,6 +10,7 @@ const {
   Notification,
 } = require('../models');
 const AppError = require('../utils/appError');
+const { getSocketServer } = require('../socket/socketServer');
 
 // ─── Helper: find thread shared between two users ─────────────────────────────
 async function findThreadBetween(userAId, userBId) {
@@ -204,6 +205,35 @@ const sendMessage = async ({ myUserId, threadId, text, clientTempId }) => {
         postId: null,
       })),
     );
+  }
+
+  const io = getSocketServer();
+  if (io) {
+    const messagePayload = {
+      id: String(message.id),
+      threadId: String(message.threadId),
+      senderId: String(message.senderId),
+      text: message.text,
+      createdAt: message.createdAt,
+      deliveryStatus: message.deliveryStatus,
+      clientTempId: clientTempId || null,
+    };
+
+    io.to(`thread:${String(threadId)}`).emit('message:new', {
+      message: messagePayload,
+    });
+
+    recipients.forEach((r) => {
+      io.to(`user:${String(r.userId)}`).emit('message:new', {
+        message: messagePayload,
+      });
+      io.to(`user:${String(r.userId)}`).emit('notification:new', {
+        type: 'message',
+        senderId: String(myUserId),
+        threadId: String(threadId),
+        createdAt: new Date().toISOString(),
+      });
+    });
   }
 
   return {
