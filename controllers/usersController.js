@@ -30,6 +30,16 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.updateAvatar = catchAsync(async (req, res, next) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const data = await usersService.updateMyAvatar(req.user.id, req.file, baseUrl);
+
+  res.status(200).json({
+    status: 'success',
+    data,
+  });
+});
+
 exports.searchUsers = catchAsync(async (req, res, next) => {
   const data = await usersService.searchUsers(req.query.q);
 

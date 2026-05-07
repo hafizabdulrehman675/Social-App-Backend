@@ -136,5 +136,21 @@ module.exports = {
   getAllUsers,
   getProfileByUsername,
   updateMyProfile,
+  updateMyAvatar: async (currentUserId, file, baseUrl) => {
+    if (!file) {
+      throw new AppError('Avatar image file is required', 400);
+    }
+
+    const user = await User.findByPk(currentUserId);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const normalizedBaseUrl = (baseUrl || '').replace(/\/$/, '');
+    user.avatarUrl = `${normalizedBaseUrl}/uploads/avatars/${file.filename}`;
+    await user.save();
+
+    return { user: formatUser(user) };
+  },
   searchUsers,
 };
