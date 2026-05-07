@@ -2,6 +2,7 @@
 
 const catchAsync = require('../utils/catchAsync');
 const usersService = require('../services/usersService');
+const { resolveUploadedImageUrl } = require('../utils/mediaStorage');
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   const data = await usersService.getAllUsers(req.user.id);
@@ -32,7 +33,13 @@ exports.updateProfile = catchAsync(async (req, res, next) => {
 
 exports.updateAvatar = catchAsync(async (req, res, next) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  const data = await usersService.updateMyAvatar(req.user.id, req.file, baseUrl);
+  const avatarUrl = await resolveUploadedImageUrl(req.file, {
+    baseUrl,
+    localSubdir: 'avatars',
+    cloudinaryFolder: 'social-app/avatars',
+    publicIdPrefix: 'avatar',
+  });
+  const data = await usersService.updateMyAvatar(req.user.id, avatarUrl);
 
   res.status(200).json({
     status: 'success',

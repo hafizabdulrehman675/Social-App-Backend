@@ -7,11 +7,12 @@ const commentsController   = require('../controllers/commentsController');
 const likesController      = require('../controllers/likesController');
 const savedPostsController = require('../controllers/savedPostsController');
 const protect = require('../middleware/protect');
+const { postImageUpload } = require('../middleware/uploadMiddleware');
 
 // feed must come before /:postId — otherwise "feed" would be treated as a postId
 router.get('/feed', protect, postsController.getFeed);
 
-router.post('/',           protect, postsController.createPost);
+router.post('/',           protect, postImageUpload.single('image'), postsController.createPost);
 router.get('/:postId',              postsController.getPost);
 router.delete('/:postId',  protect, postsController.deletePost);
 

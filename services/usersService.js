@@ -136,8 +136,8 @@ module.exports = {
   getAllUsers,
   getProfileByUsername,
   updateMyProfile,
-  updateMyAvatar: async (currentUserId, file, baseUrl) => {
-    if (!file) {
+  updateMyAvatar: async (currentUserId, avatarUrl) => {
+    if (!avatarUrl) {
       throw new AppError('Avatar image file is required', 400);
     }
 
@@ -146,8 +146,7 @@ module.exports = {
       throw new AppError('User not found', 404);
     }
 
-    const normalizedBaseUrl = (baseUrl || '').replace(/\/$/, '');
-    user.avatarUrl = `${normalizedBaseUrl}/uploads/avatars/${file.filename}`;
+    user.avatarUrl = avatarUrl;
     await user.save();
 
     return { user: formatUser(user) };

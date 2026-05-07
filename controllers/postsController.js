@@ -2,9 +2,17 @@
 
 const catchAsync = require('../utils/catchAsync');
 const postsService = require('../services/postsService');
+const { resolveUploadedImageUrl } = require('../utils/mediaStorage');
 
 exports.createPost = catchAsync(async (req, res, next) => {
-  const data = await postsService.createPost(req.user.id, req.body);
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const imageUrlFromFile = await resolveUploadedImageUrl(req.file, {
+    baseUrl,
+    localSubdir: 'posts',
+    cloudinaryFolder: 'social-app/posts',
+    publicIdPrefix: 'post',
+  });
+  const data = await postsService.createPost(req.user.id, req.body, imageUrlFromFile);
 
   res.status(201).json({
     status: 'success',

@@ -47,16 +47,17 @@ const formatPost = (post, requestUserId, includeComments = false) => ({
   isSaved: requestUserId ? post.saves.some((s) => s.userId === requestUserId) : false,
 });
 
-const createPost = async (currentUserId, payload) => {
+const createPost = async (currentUserId, payload, imageUrlFromFile = null) => {
   const { imageUrl, caption, location } = payload;
+  const finalImageUrl = imageUrlFromFile || imageUrl;
 
-  if (!imageUrl) {
-    throw new AppError('imageUrl is required', 400);
+  if (!finalImageUrl) {
+    throw new AppError('Post image is required', 400);
   }
 
   const post = await Post.create({
     userId: currentUserId,
-    imageUrl,
+    imageUrl: finalImageUrl,
     caption: caption || null,
     location: location || null,
   });
