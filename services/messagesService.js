@@ -219,15 +219,26 @@ const sendMessage = async ({ myUserId, threadId, text, clientTempId }) => {
       clientTempId: clientTempId || null,
     };
 
-    io.to(`thread:${String(threadId)}`).emit('message:new', {
+    const threadRoom = `thread:${String(threadId)}`;
+    console.log(
+      `[socket] emit message:new room=${threadRoom} sender=${myUserId} messageId=${message.id}`,
+    );
+    io.to(threadRoom).emit('message:new', {
       message: messagePayload,
     });
 
     recipients.forEach((r) => {
-      io.to(`user:${String(r.userId)}`).emit('message:new', {
+      const userRoom = `user:${String(r.userId)}`;
+      console.log(
+        `[socket] emit message:new room=${userRoom} sender=${myUserId} messageId=${message.id}`,
+      );
+      io.to(userRoom).emit('message:new', {
         message: messagePayload,
       });
-      io.to(`user:${String(r.userId)}`).emit('notification:new', {
+      console.log(
+        `[socket] emit notification:new room=${userRoom} sender=${myUserId} thread=${threadId}`,
+      );
+      io.to(userRoom).emit('notification:new', {
         type: 'message',
         senderId: String(myUserId),
         threadId: String(threadId),

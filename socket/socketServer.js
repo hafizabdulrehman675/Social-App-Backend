@@ -43,16 +43,21 @@ function initSocketServer(httpServer) {
   ioInstance.on('connection', (socket) => {
     const userId = String(socket.user.id);
     socket.join(`user:${userId}`);
-    console.log(`[socket] connected user:${userId}`);
+    console.log(`[socket] connected user:${userId} socket:${socket.id}`);
+    console.log(`[socket] join room user:${userId} by socket:${socket.id}`);
 
     socket.on('thread:join', (threadId) => {
       if (!threadId) return;
-      socket.join(`thread:${String(threadId)}`);
+      const room = `thread:${String(threadId)}`;
+      socket.join(room);
+      console.log(`[socket] join room ${room} by user:${userId} socket:${socket.id}`);
     });
 
     socket.on('thread:leave', (threadId) => {
       if (!threadId) return;
-      socket.leave(`thread:${String(threadId)}`);
+      const room = `thread:${String(threadId)}`;
+      socket.leave(room);
+      console.log(`[socket] leave room ${room} by user:${userId} socket:${socket.id}`);
     });
 
     socket.on('disconnect', () => {
