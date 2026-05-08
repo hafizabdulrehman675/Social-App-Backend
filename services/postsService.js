@@ -80,16 +80,6 @@ const getFeed = async (currentUserId) => {
     order: [['createdAt', 'DESC']],
   });
 
-  // Fallback for fresh accounts: if user has no own/following posts,
-  // return latest global posts so feed is not empty.
-  if (posts.length === 0) {
-    posts = await Post.findAll({
-      include: postInclude,
-      order: [['createdAt', 'DESC']],
-      limit: 20,
-    });
-  }
-
   return {
     posts: posts.map((p) => formatPost(p, currentUserId, false)),
   };
