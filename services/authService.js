@@ -71,9 +71,41 @@ const getMe = async (userId) => {
   return { user: formatUser(user) };
 };
 
+const forgotPassword = async (payload) => {
+  const identity = payload?.identity?.trim();
+  const newPassword = payload?.newPassword;
+
+  if (!identity || !newPassword) {
+    throw new AppError('Please provide username/email and new password', 400);
+  }
+
+  if (newPassword.length < 6) {
+    throw new AppError('Password must be at least 6 characters', 400);
+  }
+
+  const normalizedIdentity = identity.toLowerCase();
+  const user = await User.findOne({
+    where: normalizedIdentity.includes('@')
+      ? { email: normalizedIdentity }
+      : { username: identity },
+  });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  user.password = await bcrypt.hash(newPassword, 12);
+  await user.save();
+
+  return {
+    message: 'Password updated successfully. Please log in.',
+  };
+};
+
 module.exports = {
   register,
   login,
   getMe,
+  forgotPassword,
 };
 

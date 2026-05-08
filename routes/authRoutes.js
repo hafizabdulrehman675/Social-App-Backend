@@ -11,6 +11,7 @@ router.post('/register', authController.register);
 
 // Frontend: LoginPage calls this
 router.post('/login', authController.login);
+router.post('/forgot-password', authController.forgotPassword);
 
 // Protected route — token required
 // Frontend: calls this on app startup to restore auth state from localStorage session
