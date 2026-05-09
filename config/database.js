@@ -1,4 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ override: false });
+
+const useSsl = process.env.DB_SSL === 'true';
+const sslOption = useSsl ? { dialectOptions: { ssl: { require: true } } } : {};
 
 module.exports = {
   development: {
@@ -8,6 +11,7 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
+    ...sslOption,
   },
   production: {
     username: process.env.DB_USER,
@@ -16,5 +20,6 @@ module.exports = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: 'postgres',
+    ...sslOption,
   },
 };

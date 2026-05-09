@@ -2,7 +2,7 @@ const http = require('http');
 const app = require('./app');
 const sequelize = require('./config/connection');
 const { initSocketServer } = require('./socket/socketServer');
-require('dotenv').config();
+require('dotenv').config({ override: false });
 
 const PORT = process.env.PORT || 5000;
 

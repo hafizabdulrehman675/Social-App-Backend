@@ -4,7 +4,7 @@ const path = require("path");
 const AppError = require("./utils/appError");
 const errorHandler = require("./middleware/errorHandler");
 const requestLogger = require("./middleware/requestLogger");
-require("dotenv").config();
+require("dotenv").config({ override: false });
 
 const app = express();
 
