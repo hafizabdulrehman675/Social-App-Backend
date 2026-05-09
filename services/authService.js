@@ -15,6 +15,7 @@ const formatUser = (user) => ({
   fullName: user.fullName,
   email: user.email,
   avatarUrl: user.avatarUrl,
+  bio: user.bio ?? null,
 });
 
 const register = async (payload) => {
